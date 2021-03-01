@@ -1,10 +1,9 @@
+import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.operators.AggregateOperator;
-import org.apache.flink.api.java.operators.DataSource;
-import org.apache.flink.api.java.operators.FlatMapOperator;
-import org.apache.flink.api.java.operators.UnsortedGrouping;
+import org.apache.flink.api.java.operators.*;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.util.Collector;
 public class Flink01_WC_Batch {
     public static void main(String[] args) throws Exception {
@@ -20,6 +19,21 @@ public class Flink01_WC_Batch {
                 for (String word : words) {
                     out.collect(new Tuple2<>(word, 1));
                 }
+            }
+        });
+        MapOperator<String, UserBehavior> userBehaviorDS = env.readTextFile("input/UserBehavior.csv").map(data -> {
+            String[] datas = data.split(",");
+            return new UserBehavior(
+                    Long.valueOf(datas[0]),
+                    Long.valueOf(datas[1]),
+                    Integer.valueOf(datas[2]),
+                    datas[3],
+                    Long.valueOf(datas[4]));
+        });
+        FilterOperator<UserBehavior> filterDS = userBehaviorDS.filter(new FilterFunction<UserBehavior>() {
+            @Override
+            public boolean filter(UserBehavior value) throws Exception {
+                return "pv".equals(value.getBehavior());
             }
         });
 
